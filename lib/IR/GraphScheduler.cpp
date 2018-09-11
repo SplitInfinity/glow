@@ -15,8 +15,20 @@
  */
 #define DEBUG_TYPE "graph-scheduler"
 
-#include "glow/IR/GraphScheduler.h"
+#include "GraphScheduler.h"
 
+#include "glow/Graph/Graph.h"
+#include "glow/Graph/Nodes.h"
+#include "glow/Graph/Utils.h"
+#include "glow/IR/IR.h"
+#include "glow/Support/Debug.h"
+
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/StringSet.h"
+#include "llvm/ADT/ilist.h"
+#include "llvm/ADT/ilist_node.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
