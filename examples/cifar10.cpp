@@ -63,15 +63,15 @@ const unsigned numLabels = 10;
 static Placeholder *createDefaultModel(PlaceholderBindings &bindings,
                                        Function *F, NodeValue input,
                                        NodeValue expected) {
-  auto *CV0 = F->createConv(bindings, "conv", input, 16, 5, 1, 2, 1);
+  auto *CV0 = F->createConv(bindings, "conv", input, 16, 5, 1, 2, 0, 1);
   auto *RL0 = F->createRELU("relu", CV0);
   auto *MP0 = F->createMaxPool("pool", RL0, 2, 2, 0);
 
-  auto *CV1 = F->createConv(bindings, "conv", MP0, 20, 5, 1, 2, 1);
+  auto *CV1 = F->createConv(bindings, "conv", MP0, 20, 5, 1, 2, 0, 1);
   auto *RL1 = F->createRELU("relu", CV1);
   auto *MP1 = F->createMaxPool("pool", RL1, 2, 2, 0);
 
-  auto *CV2 = F->createConv(bindings, "conv", MP1, 20, 5, 1, 2, 1);
+  auto *CV2 = F->createConv(bindings, "conv", MP1, 20, 5, 1, 2, 0, 1);
   auto *RL2 = F->createRELU("relu", CV2);
   auto *MP2 = F->createMaxPool("pool", RL2, 2, 2, 0);
 
@@ -93,7 +93,7 @@ static Placeholder *createVGGModel(PlaceholderBindings &bindings, Function *F,
     if (c == 0) {
       v = F->createMaxPool("pool", v, 2, 2, 0);
     } else {
-      auto *conv = F->createConv(bindings, "conv", v, c, 3, 1, 1, 1);
+      auto *conv = F->createConv(bindings, "conv", v, c, 3, 1, 1, 0, 1);
       auto *relu = F->createRELU("relu", conv);
       v = relu;
     }

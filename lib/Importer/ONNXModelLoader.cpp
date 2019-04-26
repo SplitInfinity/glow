@@ -482,6 +482,10 @@ llvm::Error ONNXModelLoader::loadConv(const ONNX_NAMESPACE::NodeProto &op,
   if (dict.count("strides")) {
     strides = getShape<unsigned_t>(dict.at("strides"));
   }
+  std::vector<unsigned_t> dilations(2, 0);
+  if (dict.count("dilations")) {
+    dilations = getShape<unsigned_t>(dict.at("dilations"));
+  }
   unsigned_t group = 1;
   if (dict.count("group")) {
     ASSIGN_VALUE_OR_RETURN_ERR(group, loadInt(dict.at("group")));
@@ -561,7 +565,7 @@ llvm::Error ONNXModelLoader::loadConv(const ONNX_NAMESPACE::NodeProto &op,
   auto outTy = G_.getParent()->uniqueType(ElemKind::FloatTy, outDims);
 
   auto *node = G_.createConv(opName, tr, filterTransposeNode, bias, outTy,
-                             kernelShape, strides, pads, group);
+                             kernelShape, strides, pads, dilations, group);
 
   // Transpose the output back.
   auto *N = G_.createTranspose(opName, node, NHWC2NCHW);

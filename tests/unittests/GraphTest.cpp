@@ -82,7 +82,7 @@ TEST(Graph, simpleTestConv) {
       MD.createPlaceholder(ElemKind::FloatTy, {4, 320, 200, 3}, "input", true);
   Node *S = MD.createPlaceholder(ElemKind::Int64ITy, {4, 1}, "select", true);
 
-  K = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 1);
+  K = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 0, 1);
   K = F->createRELU("Relu", K);
   K = F->createSoftMax("SoftMax", K, S);
   F->createSave("Save", K);
@@ -131,7 +131,7 @@ TEST(Graph, simpleTestConvCustomLower) {
       MD.createPlaceholder(ElemKind::FloatTy, {4, 320, 200, 3}, "input", true);
   Node *S = MD.createPlaceholder(ElemKind::Int64ITy, {4, 1}, "select", true);
 
-  K = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 1);
+  K = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 0, 1);
   K = F->createRELU("Relu", K);
   K = F->createSoftMax("SoftMax", K, S);
   F->createSave("Save", K);
@@ -162,7 +162,7 @@ TEST(Graph, float16Conv) {
   PlaceholderBindings bindings;
   Node *K = MD.createConstant(ElemKind::Float16Ty, {4, 320, 200, 3}, "input");
 
-  auto *conv = F->createConv(bindings, "Conv", K, 16, 3, 2, 3, 1);
+  auto *conv = F->createConv(bindings, "Conv", K, 16, 3, 2, 3, 0, 1);
   F->createSave("Save", conv);
   EXPECT_TRUE(conv->verify());
   EXPECT_EQ(conv->getResult().getElementType(), ElemKind::Float16Ty);
@@ -263,7 +263,8 @@ TEST(Graph, useList) {
 
   EXPECT_EQ(K->getNumUsers(), 0);
 
-  ConvolutionNode *conv = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 1);
+  ConvolutionNode *conv =
+      F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 0, 1);
 
   EXPECT_TRUE(K->hasOneUse());
   EXPECT_EQ(K->getNumUsers(), 1);
@@ -343,8 +344,10 @@ TEST(Graph, useListIteration) {
   EXPECT_EQ(K->getNumUsers(), 0);
 
   PlaceholderBindings bindings;
-  ConvolutionNode *conv1 = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 1);
-  ConvolutionNode *conv2 = F->createConv(bindings, "Conv2", K, 16, 3, 2, 3, 1);
+  ConvolutionNode *conv1 =
+      F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 0, 1);
+  ConvolutionNode *conv2 =
+      F->createConv(bindings, "Conv2", K, 16, 3, 2, 3, 0, 1);
   // Check the number of users for different nodes.
   EXPECT_EQ(K->getNumUsers(), 2);
   EXPECT_EQ(conv1->getNumUsers(), 0);
@@ -432,6 +435,7 @@ TEST(Graph, simpleQuant) {
   unsigned depth = 16;
   llvm::SmallVector<unsigned_t, 2> kernels = {5, 5};
   llvm::SmallVector<unsigned_t, 4> pads = {0, 0, 0, 0};
+  llvm::SmallVector<unsigned_t, 2> dilations = {0, 0};
   llvm::SmallVector<unsigned_t, 2> steps = {1, 1};
   unsigned width = 224;
 
@@ -450,8 +454,8 @@ TEST(Graph, simpleQuant) {
   std::array<size_t, 4> outDims = {{1, outSz.first, outSz.second, 16}};
   auto t = F->getParent()->uniqueType(glow::ElemKind::Int8QTy, outDims, 1.5, 6);
 
-  auto *conv =
-      F->createConv("conv", input, filter, bias, t, kernels, steps, pads, 1);
+  auto *conv = F->createConv("conv", input, filter, bias, t, kernels, steps,
+                             pads, dilations, 1);
 
   auto s = conv->getResult().getType()->size();
   auto *fcFilter =
@@ -505,7 +509,7 @@ TEST(Graph, cloneTest) {
   Node *K =
       M.createPlaceholder(ElemKind::FloatTy, {4, 320, 200, 3}, "input", true);
   Node *S = M.createPlaceholder(ElemKind::Int64ITy, {4, 1}, "select", true);
-  Node *conv = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 1);
+  Node *conv = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 0, 1);
   Node *relu = F->createRELU("Relu", conv);
   Node *SM = F->createSoftMax("SoftMax", relu, S);
   F->createSave("Save", SM);
@@ -562,7 +566,7 @@ TEST(Graph, cloneTest2) {
   Node *K =
       M.createPlaceholder(ElemKind::FloatTy, {4, 320, 200, 3}, "input", true);
   Node *S = M.createPlaceholder(ElemKind::Int64ITy, {4, 1}, "select", true);
-  Node *conv = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 1);
+  Node *conv = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, 0, 1);
   Node *relu = F->createRELU("Relu", conv);
   Node *concat = F->createConcat("concat", {relu, relu, relu}, 0);
 
@@ -637,7 +641,7 @@ TEST(Graph, nodesWithPredicates) {
   bindings.allocate(ex);
   bindings.allocate(pred);
 
-  auto *CV0 = F->createConv(bindings, "conv1", input, 16, 5, 1, 2, 1);
+  auto *CV0 = F->createConv(bindings, "conv1", input, 16, 5, 1, 2, 0, 1);
   auto *RL0 = F->createRELU("relu1", CV0);
   auto *MP0 = F->createMaxPool("pool1", RL0, 2, 2, 0);
 
@@ -665,7 +669,8 @@ unsigned getConvNodeSize(BackendKind kind) {
   PlaceholderBindings bindings;
   auto *input =
       mod.createPlaceholder(ElemKind::FloatTy, {1, 2, 1, 32}, "input", true);
-  ConvolutionNode *CN = F->createConv(bindings, "conv", input, 6, 1, 1, 0, 2);
+  ConvolutionNode *CN =
+      F->createConv(bindings, "conv", input, 6, 1, 1, 0, 0, 2);
   F->createSave("save", CN);
 
   std::unique_ptr<Backend> backend(createBackend(kind));
@@ -1505,7 +1510,8 @@ TEST(Graph, GroupTestConvNoLower) {
       MD.createPlaceholder(ElemKind::FloatTy, {4, 320, 200, 8}, "input", true);
   Node *S = MD.createPlaceholder(ElemKind::Int64ITy, {4, 1}, "select", true);
 
-  K = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, /* group */ 8);
+  K = F->createConv(bindings, "Conv1", K, 16, 3, 2, 3, /* dilation */ 0,
+                    /* group */ 8);
   K = F->createRELU("Relu", K);
   K = F->createSoftMax("SoftMax", K, S);
   F->createSave("Save", K);

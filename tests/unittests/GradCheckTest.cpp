@@ -212,7 +212,7 @@ static void gradientCheckGroupConv(size_t depth, size_t group,
   auto *Ex = mod.createPlaceholder(
       ElemKind::FloatTy, {1, numDim + 1, numDim + 1, depth}, "exp", false);
 
-  Node *O = F->createConv(bindings, "conv", A, depth, 2, 1, 1, group);
+  Node *O = F->createConv(bindings, "conv", A, depth, 2, 1, 1, 0, group);
   O = F->createRegression("reg", O, Ex);
   auto *result = F->createSave("ret", O);
 

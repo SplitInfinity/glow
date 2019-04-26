@@ -217,7 +217,7 @@ void inferConvNet(Tensor *inputs, Tensor *filter, Tensor *bias, Tensor *out,
     outP = createPlaceholder(mod, bindings, out, "outP");
     OT = F->getParent()->uniqueType(out->getElementType(), out->dims());
   }
-  auto *conv = F->createConv("conv", inputP, filterP, biasP, OT, 5, 3, 4, 1);
+  auto *conv = F->createConv("conv", inputP, filterP, biasP, OT, 5, 3, 4, 0, 1);
   auto *result = F->createSave("ret", conv, outP);
   auto *resultTensor = bindings.get(result->getPlaceholder());
 
@@ -249,11 +249,11 @@ void trainConvNet(Tensor *inputs, Tensor *kernel1, Tensor *bias1,
   auto *var1 = createPlaceholder(mod, bindings, inputs, "var1");
   auto *var2 = createPlaceholder(mod, bindings, selected, "var2");
   auto *conv1 = F->createConv(bindings, "conv1", var1, 3, {5, 3}, {2, 1},
-                              {2, 1, 2, 1}, 1);
+                              {2, 1, 2, 1}, {0, 0}, 1);
   bindings.get(cast<Placeholder>(conv1->getFilter()))->assign(kernel1);
   bindings.get(cast<Placeholder>(conv1->getBias()))->assign(bias1);
   auto *reshape1 = F->createReshape("reshape1", conv1, shape1);
-  auto *conv2 = F->createConv(bindings, "conv2", reshape1, 2, 2, 2, 0, 1);
+  auto *conv2 = F->createConv(bindings, "conv2", reshape1, 2, 2, 2, 0, 0, 1);
   bindings.get(cast<Placeholder>(conv2->getFilter()))->assign(kernel2);
   bindings.get(cast<Placeholder>(conv2->getBias()))->assign(bias2);
   auto *reshape2 = F->createReshape("reshape2", conv2, shape2);
@@ -415,7 +415,7 @@ void inferSmallConv(Tensor *inputs, Tensor *out, BackendKind kind) {
   auto &mod = EE.getModule();
   auto *F = mod.createFunction("main");
   auto *in = createPlaceholder(mod, bindings, inputs, "in");
-  auto *C = F->createConv(bindings, "conv2a", in, 64, 1, 1, 0, 1);
+  auto *C = F->createConv(bindings, "conv2a", in, 64, 1, 1, 0, 0, 1);
   bindings.get(cast<Placeholder>(C->getFilter()))->getHandle().clear(0.3);
   bindings.get(cast<Placeholder>(C->getBias()))->getHandle().clear(0.4);
   auto *result = F->createSave("ret", C);
@@ -460,7 +460,7 @@ void inferGroupConv(Tensor *out, BackendKind kind) {
   auto outTy = mod.uniqueType(ElemKind::FloatTy, {1, 2, 1, 128});
 
   ConvolutionNode *CN =
-      F->createConv("Conv", input, filter, zeroBias, outTy, 1, 1, 0, 2);
+      F->createConv("Conv", input, filter, zeroBias, outTy, 1, 1, 0, 0, 2);
   SaveNode *result = F->createSave("save", CN);
   auto *resultTensor = bindings.allocate(result->getPlaceholder());
 
@@ -499,7 +499,7 @@ void inferNonSquarePaddingConv(Tensor *out, BackendKind kind) {
   auto outTy = mod.uniqueType(ElemKind::FloatTy, {1, 4, 5, 128});
 
   ConvolutionNode *CN = F->createConv("Conv", input, filter, zeroBias, outTy,
-                                      {1, 1}, {1, 1}, {0, 1, 2, 3}, 1);
+                                      {1, 1}, {1, 1}, {0, 1, 2, 3}, {0, 0}, 1);
   SaveNode *result = F->createSave("save", CN);
   auto *resultTensor = bindings.allocate(result->getPlaceholder());
 
@@ -539,7 +539,7 @@ void inferNonSquareKernelConv(Tensor *out, BackendKind kind) {
   auto outTy = mod.uniqueType(ElemKind::FloatTy, {1, 3, 5, 128});
 
   ConvolutionNode *CN = F->createConv("Conv", input, filter, zeroBias, outTy,
-                                      {2, 1}, {1, 1}, {0, 1, 2, 3}, 1);
+                                      {2, 1}, {1, 1}, {0, 1, 2, 3}, {0, 0}, 1);
   SaveNode *result = F->createSave("save", CN);
   auto *resultTensor = bindings.allocate(result->getPlaceholder());
 
@@ -579,7 +579,7 @@ void inferNonSquareStrideConv(Tensor *out, BackendKind kind) {
   auto outTy = mod.uniqueType(ElemKind::FloatTy, {1, 2, 5, 128});
 
   ConvolutionNode *CN = F->createConv("Conv", input, filter, zeroBias, outTy,
-                                      {2, 1}, {2, 1}, {0, 1, 2, 3}, 1);
+                                      {2, 1}, {2, 1}, {0, 1, 2, 3}, {0, 0}, 1);
   SaveNode *result = F->createSave("save", CN);
   auto *resultTensor = bindings.allocate(result->getPlaceholder());
 
@@ -620,7 +620,7 @@ void inferConvDKKC8(Tensor *out, BackendKind kind) {
   auto outTy = mod.uniqueType(ElemKind::FloatTy, {3, 3, 3, 192});
 
   ConvolutionNode *CN = F->createConv("Conv", input, filter, zeroBias, outTy,
-                                      {3, 3}, {1, 1}, {1, 1, 1, 1}, 1);
+                                      {3, 3}, {1, 1}, {1, 1, 1, 1}, {0, 0}, 1);
   SaveNode *result = F->createSave("save", CN);
   auto *resultTensor = bindings.allocate(result->getPlaceholder());
 
@@ -700,7 +700,7 @@ void inferBasicConvNet(Tensor *inputs, Tensor *out, BackendKind kind,
   auto *var = createPlaceholder(mod, bindings, inputs, "var");
   auto *tr = F->createTranspose("tr", var, NCHW2NHWC);
   auto *conv = F->createConv(bindings, "conv", tr, convDepth, {5, 5}, {2, 2},
-                             {1, 1, 1, 1}, 1);
+                             {1, 1, 1, 1}, {0, 0}, 1);
   bindings.get(cast<Placeholder>(conv->getFilter()))->getHandle().clear(0.1);
   bindings.get(cast<Placeholder>(conv->getBias()))->getHandle().clear(0.2);
   auto *pool = F->createMaxPool("pool", conv, 2, 2, 0);
@@ -779,7 +779,7 @@ void inferComplexNet1(Tensor *inputs1, Tensor *inputs2, Tensor *inputs3,
   auto *var2 = createPlaceholder(mod, bindings, inputs2, "var2");
   auto *var3 = createPlaceholder(mod, bindings, inputs3, "var3");
   auto *var4 = createPlaceholder(mod, bindings, inputs4, "var4");
-  auto *conv1 = F->createConv(bindings, "conv1", var1, 6, 4, 1, 2, 1);
+  auto *conv1 = F->createConv(bindings, "conv1", var1, 6, 4, 1, 2, 0, 1);
   bindings.get(cast<Placeholder>(conv1->getFilter()))->getHandle().clear(0.5);
   bindings.get(cast<Placeholder>(conv1->getBias()))->getHandle().clear(0.7);
   auto *sigmoid1 = F->createSigmoid("sigmoid1", conv1);
@@ -795,7 +795,7 @@ void inferComplexNet1(Tensor *inputs1, Tensor *inputs2, Tensor *inputs3,
   auto *reshape2 = F->createReshape("reshape2", fc2, {8, 8, 15, 6});
   auto *mul = F->createMul("mul", tanh, reshape2);
   auto *sigmoid2 = F->createSigmoid("sigmoid2", mul);
-  auto *conv2 = F->createConv(bindings, "conv2", sigmoid2, 7, 3, 2, 1, 1);
+  auto *conv2 = F->createConv(bindings, "conv2", sigmoid2, 7, 3, 2, 1, 0, 1);
   bindings.get(cast<Placeholder>(conv2->getFilter()))->getHandle().clear(0.3);
   bindings.get(cast<Placeholder>(conv2->getBias()))->getHandle().clear(1.3);
   auto *reshape3 = F->createReshape("reshape3", conv2, {8, 8, 7, 4});
@@ -831,12 +831,12 @@ void inferTinyResnet(Tensor *input, Tensor *out, std::vector<Tensor> &weights,
   auto *F = mod.createFunction("main");
 
   auto *in = createPlaceholder(mod, bindings, input, "in");
-  auto *conv1 = F->createConv(bindings, "conv1", in, 256, 1, 1, 0, 1);
-  auto *conv2a = F->createConv(bindings, "conv2a", conv1, 64, 1, 1, 0, 1);
+  auto *conv1 = F->createConv(bindings, "conv1", in, 256, 1, 1, 0, 0, 1);
+  auto *conv2a = F->createConv(bindings, "conv2a", conv1, 64, 1, 1, 0, 0, 1);
   auto *relu2a = F->createRELU("relu2a", conv2a);
-  auto *conv2b = F->createConv(bindings, "conv2b", relu2a, 64, 3, 1, 1, 1);
+  auto *conv2b = F->createConv(bindings, "conv2b", relu2a, 64, 3, 1, 1, 0, 1);
   auto *relu2b = F->createRELU("relu2b", conv2b);
-  auto *conv2c = F->createConv(bindings, "conv2c", relu2b, 256, 1, 1, 0, 1);
+  auto *conv2c = F->createConv(bindings, "conv2c", relu2b, 256, 1, 1, 0, 0, 1);
   auto *add = F->createAdd("add", conv2c, conv1);
   auto *relu = F->createRELU("res2a_relu", add);
   auto *result = F->createSave("ret", relu);

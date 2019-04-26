@@ -2051,7 +2051,7 @@ createAndInitConvDepthTest(glow::PlaceholderBindings &bindings,
 
   auto *input =
       mod.createPlaceholder(ElemKind::FloatTy, {1, 10, 10, 3}, "in", false);
-  auto *conv = F->createConv(bindings, "conv", input, convDepth, 5, 1, 0, 1);
+  auto *conv = F->createConv(bindings, "conv", input, convDepth, 5, 1, 0, 0, 1);
   auto *bias = llvm::cast<Placeholder>(conv->getBias().getNode());
 
   bindings.allocate(input)->getHandle().randomize(-1.0, 1.0, mod.getPRNG());
@@ -3462,7 +3462,7 @@ TEST_P(OperatorTest, GroupConvolution) {
   auto outTy = mod_.uniqueType(ElemKind::FloatTy, {1, 2, 1, 6});
 
   ConvolutionNode *CN =
-      F_->createConv("Conv", input, filter, zeroBias, outTy, 1, 1, 0, 2);
+      F_->createConv("Conv", input, filter, zeroBias, outTy, 1, 1, 0, 0, 2);
   SaveNode *S = F_->createSave("save", CN);
   bindings_.allocate(S->getPlaceholder());
 
@@ -3584,7 +3584,7 @@ TEST_P(OperatorTest, NonSquarePaddingConvolution) {
   auto outTy = mod_.uniqueType(ElemKind::FloatTy, {1, 4, 8, 2});
 
   ConvolutionNode *CN = F_->createConv("Conv", input, filter, zeroBias, outTy,
-                                       {2, 2}, {1, 1}, {0, 2, 1, 3}, 1);
+                                       {2, 2}, {1, 1}, {0, 2, 1, 3}, {0, 0}, 1);
   SaveNode *S = F_->createSave("save", CN);
   bindings_.allocate(S->getPlaceholder());
 
@@ -3607,7 +3607,7 @@ TEST_P(OperatorTest, NonSquarePaddingConvolution) {
 
   Function *refF = mod_.createFunction("mainRef");
   CN = refF->createConv("Conv1", input1, filter, zeroBias, outTy, {2, 2},
-                        {1, 1}, {0, 0, 0, 0}, 1);
+                        {1, 1}, {0, 0, 0, 0}, {0, 0}, 1);
   S = refF->createSave("save1", CN);
   bindings_.allocate(S->getPlaceholder());
 
@@ -3989,7 +3989,7 @@ TEST_P(OperatorTest, NonSquareKernelConvolution) {
 
   auto outTy = mod_.uniqueType(ElemKind::FloatTy, {1, 3, 2, 1});
   ConvolutionNode *CN = F_->createConv("Conv", input, filter, zeroBias, outTy,
-                                       {2, 3}, {1, 1}, {0, 0, 0, 0}, 1);
+                                       {2, 3}, {1, 1}, {0, 0, 0, 0}, {0, 0}, 1);
   SaveNode *S = F_->createSave("save", CN);
   bindings_.allocate(S->getPlaceholder());
 
@@ -4199,7 +4199,7 @@ TEST_P(OperatorTest, NonSquareStrideConvolution) {
 
   auto outTy = mod_.uniqueType(ElemKind::FloatTy, {1, 2, 2, 1});
   ConvolutionNode *CN = F_->createConv("Conv", input, filter, zeroBias, outTy,
-                                       {2, 2}, {3, 2}, {0, 0, 1, 1}, 1);
+                                       {2, 2}, {3, 2}, {0, 0, 1, 1}, {0, 0}, 1);
   SaveNode *S = F_->createSave("save", CN);
   bindings_.allocate(S->getPlaceholder());
 

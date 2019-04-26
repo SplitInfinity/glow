@@ -124,7 +124,7 @@ TEST_F(GraphOptz, liveCodeNotEliminated) {
 TEST_F(GraphOptz, optimizeBatchNormAfterConv) {
   Node *A =
       mod_.createPlaceholder(ElemKind::FloatTy, {1, 10, 20, 3}, "A", false);
-  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 1);
+  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 0, 1);
   Node *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
   F_->createSave("ret", BN);
@@ -148,7 +148,7 @@ TEST_F(GraphOptz, optimizeBatchNormAfterConv) {
 TEST_F(GraphOptz, optimizeBatchNormAfterConvMultiple) {
   Placeholder *A =
       mod_.createPlaceholder(ElemKind::FloatTy, {1, 10, 20, 3}, "A", false);
-  ConvolutionNode *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 1);
+  ConvolutionNode *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 0, 1);
   BatchNormalizationNode *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
   F_->createSave("ret", BN);
@@ -190,7 +190,7 @@ TEST_F(GraphOptz, optimizeBatchNormAfterConvMultiple) {
 TEST_F(GraphOptz, optimizeBatchNormAfterConvFP16) {
   Node *A =
       mod_.createPlaceholder(ElemKind::Float16Ty, {1, 10, 20, 3}, "A", false);
-  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 1);
+  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 0, 1);
   Node *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
   F_->createSave("ret", BN);
@@ -221,7 +221,7 @@ TEST_F(GraphOptz, optimizeBatchNormAfterConvWithTransposedWeights) {
   auto *TN = F_->createTranspose("transpose", filter, NCHW2NHWC);
   auto *CV = F_->createConv("conv", input, TN, bias,
                             mod_.uniqueType(ElemKind::FloatTy, {1, 10, 20, 16}),
-                            5, 1, 2, 1);
+                            5, 1, 2, 0, 1);
   auto *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
   F_->createSave("ret", BN);
@@ -250,7 +250,7 @@ TEST_F(GraphOptz, optimizeBatchNormAfterConvWithReshapeConst) {
   auto *TN = F_->createTranspose("transpose", filter, {3, 0, 1, 2});
   auto *CV = F_->createConv("conv", input, TN, bias,
                             mod_.uniqueType(ElemKind::FloatTy, {1, 10, 20, 1}),
-                            5, 1, 2, 1);
+                            5, 1, 2, 0, 1);
   auto *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
   F_->createSave("ret", BN);
@@ -275,7 +275,7 @@ TEST_F(GraphOptz, optimizeBatchNormAfterConvWithPred) {
       mod_.createPlaceholder(ElemKind::FloatTy, {1}, "predicate", false);
   Node *pred2 =
       mod_.createPlaceholder(ElemKind::FloatTy, {1}, "predicate", false);
-  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 1);
+  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 0, 1);
   CV->setPredicate(pred1);
   Node *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
@@ -332,7 +332,7 @@ TEST_F(GraphOptz, cseRespectsPredicates) {
 TEST_F(GraphOptz, optimizeBatchNormAfterConvButConvReused) {
   Node *A =
       mod_.createPlaceholder(ElemKind::FloatTy, {1, 10, 20, 3}, "A", false);
-  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 1);
+  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 0, 1);
   Node *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
   SaveNode *ret = F_->createSave("ret", BN);
@@ -364,7 +364,7 @@ TEST_F(GraphOptz, optimizeBatchNormAfterConvButVarReused) {
 
   ConvolutionNode *CV = F_->createConv(
       "conv", A, filter, bias,
-      mod_.uniqueType(ElemKind::FloatTy, {1, 10, 20, 16}), 5, 1, 2, 1);
+      mod_.uniqueType(ElemKind::FloatTy, {1, 10, 20, 16}), 5, 1, 2, 0, 1);
   auto *beta = mod_.createPlaceholder(ElemKind::FloatTy, {16}, "beta", true);
   auto *gamma = mod_.createPlaceholder(ElemKind::FloatTy, {16}, "gamma", true);
 
@@ -447,7 +447,7 @@ TEST_F(GraphOptz, transposeConstantWithPredicate) {
 TEST_F(GraphOptz, BatchNormAfterConvNotOptimizeForTrain) {
   Node *A =
       mod_.createPlaceholder(ElemKind::FloatTy, {1, 10, 20, 3}, "A", false);
-  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 1);
+  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 0, 1);
   Node *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
   F_->createSave("ret", BN);
@@ -472,7 +472,7 @@ TEST_F(GraphOptz, batchNormAfterConvNotOptimizeWhenMoreThanOneUseOfConv) {
   Node *A =
       mod_.createPlaceholder(ElemKind::FloatTy, {1, 10, 20, 3}, "A", false);
 
-  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 1);
+  Node *CV = F_->createConv(bindings_, "conv", A, 16, 5, 1, 2, 0, 1);
   Node *BN =
       F_->createBatchNormalization(bindings_, "batch", CV, 3, 0.0001, 0.9);
   SaveNode *convSave = F_->createSave("ret", CV);
@@ -574,7 +574,7 @@ TEST_F(GraphOptz, sinkTransposeBelowRescale) {
   // Graph.
   ConvolutionNode *conv =
       F_->createConv("conv", input, filter, bias, input->getType(), {1, 1},
-                     {1, 1}, {0, 0, 0, 0}, 1);
+                     {1, 1}, {0, 0, 0, 0}, {0, 0}, 1);
 
   auto *T = F_->createTranspose("transpose", conv, NHWC2NCHW);
   auto *RT = mod_.uniqueType(ElemKind::Int8QTy, T->getResult().dims(), 0.2, 0);
@@ -1937,7 +1937,8 @@ TEST_F(GraphOptz, fuseRescaleIntoConv) {
       "rescale", bias, mod_.uniqueType(ElemKind::Int8QTy, {16}, 0.3, 25));
   auto *CV = F_->createConv(
       "conv", rInput, rFilter, rBias,
-      mod_.uniqueType(ElemKind::Int8QTy, {1, 10, 20, 16}, 0.7, -3), 5, 1, 2, 1);
+      mod_.uniqueType(ElemKind::Int8QTy, {1, 10, 20, 16}, 0.7, -3), 5, 1, 2, 0,
+      1);
   auto *rCV = F_->createRescaleQuantized(
       "rescale", CV,
       mod_.uniqueType(ElemKind::Int8QTy, {1, 10, 20, 16}, 0.4, 37));
@@ -1984,7 +1985,8 @@ void fusePadIntoConvTest(glow::Module &mod_, glow::Function *F_,
       "conv", P, F, B,
       mod_.uniqueType(ElemKind::FloatTy, {outPadDims[0], outPadDims[1],
                                           outPadDims[2], convNumKernels}),
-      {convKernelSize, convKernelSize}, {convStride, convStride}, convPads, 1);
+      {convKernelSize, convKernelSize}, {convStride, convStride}, convPads,
+      {0, 0}, 1);
 
   SaveNode *O = F_->createSave("save", CV);
 

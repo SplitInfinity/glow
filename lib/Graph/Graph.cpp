@@ -536,29 +536,28 @@ static void assertConv3DDims(NodeValue input, NodeValue filter, NodeValue bias,
   assert(bias.getType()->size() == filterDims.n && "Invalid bias size");
 }
 
-ConvolutionNode *Function::createConv(llvm::StringRef name, NodeValue input,
-                                      NodeValue filter, NodeValue bias,
-                                      TypeRef outTy,
-                                      llvm::ArrayRef<unsigned_t> kernels,
-                                      llvm::ArrayRef<unsigned_t> strides,
-                                      llvm::ArrayRef<unsigned_t> pads,
-                                      unsigned_t group) {
+ConvolutionNode *Function::createConv(
+    llvm::StringRef name, NodeValue input, NodeValue filter, NodeValue bias,
+    TypeRef outTy, llvm::ArrayRef<unsigned_t> kernels,
+    llvm::ArrayRef<unsigned_t> strides, llvm::ArrayRef<unsigned_t> pads,
+    llvm::ArrayRef<unsigned_t> dilations, unsigned_t group) {
   assertConvDims(input, filter, bias, kernels, strides, pads, group);
   auto OT = getParent()->uniqueType(*outTy);
   return addNode(new ConvolutionNode(name, OT, input, filter, bias, kernels,
-                                     strides, pads, group));
+                                     strides, pads, dilations, group));
 }
 
 ConvolutionNode *Function::createConv(llvm::StringRef name, NodeValue input,
                                       NodeValue filter, NodeValue bias,
                                       TypeRef outTy, unsigned_t kernel,
                                       unsigned_t stride, unsigned_t pad,
-                                      unsigned_t group) {
+                                      unsigned_t dilation, unsigned_t group) {
   llvm::SmallVector<unsigned_t, 4> pads = {pad, pad, pad, pad};
   llvm::SmallVector<unsigned_t, 2> strides = {stride, stride};
   llvm::SmallVector<unsigned_t, 2> kernels = {kernel, kernel};
+  llvm::SmallVector<unsigned_t, 2> dilations = {dilation, dilation};
   return createConv(name, input, filter, bias, outTy, kernels, strides, pads,
-                    group);
+                    dilations, group);
 }
 
 Convolution3DNode *Function::createConv3D(llvm::StringRef name, NodeValue input,
@@ -1949,13 +1948,11 @@ BatchNormalizationNode *Function::createBatchNormalization(
                                   channelIdx, epsilon, momentum);
 }
 
-ConvolutionNode *Function::createConv(PlaceholderBindings &bindings,
-                                      llvm::StringRef name, NodeValue input,
-                                      size_t outChannels,
-                                      llvm::ArrayRef<unsigned_t> kernels,
-                                      llvm::ArrayRef<unsigned_t> strides,
-                                      llvm::ArrayRef<unsigned_t> pads,
-                                      unsigned_t group) {
+ConvolutionNode *Function::createConv(
+    PlaceholderBindings &bindings, llvm::StringRef name, NodeValue input,
+    size_t outChannels, llvm::ArrayRef<unsigned_t> kernels,
+    llvm::ArrayRef<unsigned_t> strides, llvm::ArrayRef<unsigned_t> pads,
+    llvm::ArrayRef<unsigned_t> dilations, unsigned_t group) {
   ShapeNHWC idim = ShapeNHWC(input.dims());
   ShapeHW kdim(kernels);
   PaddingTLBR pdim(pads);
@@ -1995,19 +1992,20 @@ ConvolutionNode *Function::createConv(PlaceholderBindings &bindings,
   auto OT = getParent()->uniqueType(inputTy, outDims);
 
   return addNode(new ConvolutionNode(name, OT, input, filter, bias, kernels,
-                                     strides, pads, group));
+                                     strides, pads, dilations, group));
 }
 
 ConvolutionNode *Function::createConv(PlaceholderBindings &bindings,
                                       llvm::StringRef name, NodeValue input,
                                       size_t outChannels, unsigned_t kernel,
                                       unsigned_t stride, unsigned_t pad,
-                                      unsigned_t group) {
+                                      unsigned_t dilation, unsigned_t group) {
   llvm::SmallVector<unsigned_t, 4> pads = {pad, pad, pad, pad};
   llvm::SmallVector<unsigned_t, 2> strides = {stride, stride};
   llvm::SmallVector<unsigned_t, 2> kernels = {kernel, kernel};
+  llvm::SmallVector<unsigned_t, 2> dilations = {dilation, dilation};
   return createConv(bindings, name, input, outChannels, kernels, strides, pads,
-                    group);
+                    dilations, group);
 }
 
 Convolution3DNode *Function::createConv3D(PlaceholderBindings &bindings,

@@ -1033,7 +1033,7 @@ TEST_P(InterpreterAndCPU, convNetForImageRecognition) {
   Placeholder *ex =
       mod.createPlaceholder(ElemKind::Int64ITy, {batchSize, 1}, "exp", false);
 
-  auto *CV = F->createConv(bindings, "conv", input, 1, 3, 1, 0, 1);
+  auto *CV = F->createConv(bindings, "conv", input, 1, 3, 1, 0, 0, 1);
   auto *TANH = F->createTanh("tanh", CV);
   auto *FCL = F->createFullyConnected(bindings, "fc", TANH, 2);
   auto *SM = F->createSoftMax("sm", FCL, ex);

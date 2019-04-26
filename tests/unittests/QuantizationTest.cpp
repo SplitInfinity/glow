@@ -254,7 +254,7 @@ static void quantizeSimpleConvGraph(ElemKind quantizationPrecision) {
   bindings.allocate(input);
 
   auto *CN = F->createConv("Conv", input, filter, bias, outTy, {2, 2}, {1, 1},
-                           {0, 2, 1, 3}, 1);
+                           {0, 2, 1, 3}, {0, 0}, 1);
   auto *S = F->createSave("ret", CN);
   bindings.allocate(S->getPlaceholder());
 
@@ -709,7 +709,7 @@ static Function *createSimpleGraphForQuantization(Module *M,
 
   fillStableRandomData(bindings.allocate(B)->getHandle(), 2001, 1);
 
-  ConvolutionNode *CV = F->createConv(bindings, "conv", A, 16, 5, 1, 2, 2);
+  ConvolutionNode *CV = F->createConv(bindings, "conv", A, 16, 5, 1, 2, 0, 2);
   auto *bias = cast<Placeholder>(CV->getBias());
   auto *filter = cast<Placeholder>(CV->getFilter());
   fillStableRandomData(bindings.get(bias)->getHandle(), 2001, 1);

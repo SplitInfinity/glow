@@ -554,6 +554,8 @@ static void lowerGroupConvolutionNode(Function *F, LoweredInfoMap *loweredMap,
   llvm::ArrayRef<unsigned_t> kernels = BNG.getKernels();
   llvm::ArrayRef<unsigned_t> pads = BNG.getPads();
   llvm::ArrayRef<unsigned_t> strides = BNG.getStrides();
+  llvm::ArrayRef<unsigned_t> dilations = BNG.getDilations();
+
   unsigned_t group = BNG.getGroup();
   auto in = BNG.getInput();
   auto filter = BNG.getFilter();
@@ -581,7 +583,7 @@ static void lowerGroupConvolutionNode(Function *F, LoweredInfoMap *loweredMap,
                                       {(groupId + 1) * outCperG});
     convs.push_back(F->createConv(BNG.getName(), in_slice, filter_slice,
                                   bias_slice, outTy, kernels, strides, pads,
-                                  1));
+                                  dilations, 1));
   }
   auto *result = F->createConcat(BNG.getName(), convs, 3);
   replaceAllUsesOfWith(loweredMap, BNG.getResult(), result);

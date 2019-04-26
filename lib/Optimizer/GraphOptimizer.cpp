@@ -731,7 +731,7 @@ static bool mergePadIntoConvolution(Function *F) {
     auto *newCN = F->createConv(CN->getName(), PN->getInput(), CN->getFilter(),
                                 CN->getBias(), CN->getResult().getType(),
                                 CN->getKernels(), CN->getStrides(), newConvPads,
-                                CN->getGroup());
+                                CN->getDilations(), CN->getGroup());
     CN->getResult().replaceAllUsesOfWith(newCN);
     changed = true;
   }
@@ -2307,9 +2307,10 @@ static bool sinkRescaleQuantizedNode(Function *F) {
       auto newF = rescaleF ? rescaleF->getInput() : CN->getFilter();
       auto newB = rescaleB ? rescaleB->getInput() : CN->getBias();
       if (rescaleX || rescaleF || rescaleB) {
-        auto *newCN = F->createConv(
-            CN->getName(), newX, newF, newB, CN->getResult().getType(),
-            CN->getKernels(), CN->getStrides(), CN->getPads(), CN->getGroup());
+        auto *newCN = F->createConv(CN->getName(), newX, newF, newB,
+                                    CN->getResult().getType(), CN->getKernels(),
+                                    CN->getStrides(), CN->getPads(),
+                                    CN->getDilations(), CN->getGroup());
         CN->getResult().replaceAllUsesOfWith(newCN);
         changed = true;
       }

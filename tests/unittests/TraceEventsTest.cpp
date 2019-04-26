@@ -50,7 +50,7 @@ public:
   // TraceEventNodes.
   Node *part_one(Function *F, ExecutionContext &context) {
     auto *CV0 = F->createConv(*context.getPlaceholderBindings(), "conv1",
-                              inputPH, 16, 5, 1, 2, 1);
+                              inputPH, 16, 5, 1, 2, 0, 1);
     auto *RL0 = F->createRELU("relu1", CV0);
     auto *MP0 = F->createMaxPool("pool1", RL0, 2, 2, 0);
     return MP0;
@@ -58,7 +58,7 @@ public:
 
   Node *part_two(Function *F, ExecutionContext &context, Node *last) {
     auto *CV1 = F->createConv(*context.getPlaceholderBindings(), "conv2", last,
-                              20, 5, 1, 2, 1);
+                              20, 5, 1, 2, 0, 1);
     auto *RL1 = F->createRELU("relu2", CV1);
     auto *MP1 = F->createMaxPool("pool2", RL1, 2, 2, 0);
     return MP1;
@@ -66,7 +66,7 @@ public:
 
   Node *part_three(Function *F, ExecutionContext &context, Node *last) {
     auto *CV2 = F->createConv(*context.getPlaceholderBindings(), "conv3", last,
-                              20, 5, 1, 2, 1);
+                              20, 5, 1, 2, 0, 1);
     auto *RL2 = F->createRELU("relu3", CV2);
     auto *MP2 = F->createMaxPool("pool3", RL2, 2, 2, 0);
     return MP2;

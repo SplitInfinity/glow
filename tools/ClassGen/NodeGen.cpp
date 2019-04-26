@@ -80,12 +80,13 @@ int main(int argc, char **argv) {
       .addMember(MemberType::VectorUnsigned, "Kernels")
       .addMember(MemberType::VectorUnsigned, "Strides")
       .addMember(MemberType::VectorUnsigned, "Pads")
+      .addMember(MemberType::VectorUnsigned, "Dilations")
       .addMember(MemberType::Unsigned, "Group")
       .addResultFromCtorArg()
       .addGradient()
       .setDocstring("Performs 2D Convolution using a given Input, Filter, and "
                     "Bias tensors, as well as provided Kernels, Strides, Pads, "
-                    "and Group.");
+                    "Dilations and Group.");
 
   BB.newNode("Convolution3D")
       .addInput("Input")

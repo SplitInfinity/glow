@@ -246,6 +246,8 @@ llvm::Error Caffe2ModelLoader::loadOperator(const caffe2::OperatorDef &op) {
     ASSIGN_VALUE_OR_RETURN_ERR(pads, getPads(dict));
     std::vector<unsigned_t> kernels;
     ASSIGN_VALUE_OR_RETURN_ERR(kernels, getSizeHW(dict, "kernel", 0));
+    std::vector<unsigned_t> dilations;
+    ASSIGN_VALUE_OR_RETURN_ERR(dilations, getSizeHW(dict, "dilations", 0));
     unsigned_t group = 1;
     if (dict.count("group")) {
       ASSIGN_VALUE_OR_RETURN_ERR(group, loadInt(dict["group"]));
@@ -354,7 +356,7 @@ llvm::Error Caffe2ModelLoader::loadOperator(const caffe2::OperatorDef &op) {
     }
 
     Node *node = G_.createConv(opName, finalIn, filter, bias, outTy, kernels,
-                               strides, pads, group);
+                               strides, pads, dilations, group);
     if (typeName == "ConvRelu") {
       node = G_.createRELU(opName + ".relu", node);
     }

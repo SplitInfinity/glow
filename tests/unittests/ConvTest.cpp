@@ -42,8 +42,8 @@ void singleConvNet(Tensor *input, Tensor *out, BackendKind kind,
                                     "var", false);
   bindings.allocate(var)->assign(input);
 
-  auto *conv =
-      F->createConv(bindings, "conv", var, convDepth, kernel, stride, pad, 1);
+  auto *conv = F->createConv(bindings, "conv", var, convDepth, kernel, stride,
+                             pad, 0, 1);
   bindings.get(cast<Placeholder>(conv->getFilter()))->getHandle().clear(0.1);
   bindings.get(cast<Placeholder>(conv->getBias()))->getHandle().clear(0.1);
   auto *result = F->createSave("ret", conv);
