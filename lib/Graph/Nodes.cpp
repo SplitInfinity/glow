@@ -109,6 +109,7 @@ static bool verifyConvolution(NodeValue src, NodeValue dest, NodeValue filter,
                               llvm::ArrayRef<unsigned_t> kernels,
                               llvm::ArrayRef<unsigned_t> strides,
                               llvm::ArrayRef<unsigned_t> pads,
+                              llvm::ArrayRef<unsigned_t> dilations,
                               unsigned_t group) {
   const Node *parent = dest.getNode();
   bool isValid = checkType(src, dest.getElementType(), parent);
@@ -134,8 +135,8 @@ static bool verifyConvolution(NodeValue src, NodeValue dest, NodeValue filter,
   isValid &= expectCompareTrue("channels number must be divisible by groups",
                                idim.c % group, size_t(0), parent);
 
-  auto outSz =
-      calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides, pads);
+  auto outSz = calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides,
+                                           pads, dilations);
   isValid &=
       expectCompareTrue("Invalid output dimension N", odim.n, idim.n, parent);
   isValid &= expectCompareTrue("Invalid output dimension H", odim.h,
@@ -256,8 +257,8 @@ static bool verifyPool(NodeValue src, NodeValue dest,
                                idim.w + pdim.left + pdim.right, kdim.width,
                                parent, CompareOperatorGreaterEqual<size_t>());
 
-  auto outSz =
-      calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides, pads);
+  auto outSz = calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides,
+                                           pads, /*dilations=*/{0, 0});
   ShapeNHWC exp(idim.n, outSz.first, outSz.second, idim.c);
   isValid &=
       expectCompareTrue("Unexpected output dimensions", exp, odim, parent);
@@ -406,7 +407,7 @@ bool PadNode::verify() const {
 
 bool ConvolutionNode::verify() const {
   return verifyConvolution(getInput(), getResult(), getFilter(), getBias(),
-                           Kernels_, Strides_, Pads_, Group_);
+                           Kernels_, Strides_, Pads_, Dilations_, Group_);
 }
 
 bool Convolution3DNode::verify() const {
@@ -444,7 +445,7 @@ bool ConvolutionGradNode::verify() const {
   isValid &= verifyConvolution(
       getGradOfInputNamedInput(), getGradOfOriginalOutputNamedResult(),
       getGradOfInputNamedFilter(), getGradOfInputNamedBias(), Kernels_,
-      Strides_, Pads_, Group_);
+      Strides_, Pads_, Dilations_, Group_);
   return isValid;
 }
 

@@ -140,13 +140,22 @@ public:
 /// parameters.
 inline std::pair<size_t, size_t> calculateConvPoolOutputDims(
     size_t sx, size_t sy, llvm::ArrayRef<unsigned_t> kernels,
-    llvm::ArrayRef<unsigned_t> strides, llvm::ArrayRef<unsigned_t> pads) {
+    llvm::ArrayRef<unsigned_t> strides, llvm::ArrayRef<unsigned_t> pads,
+    llvm::ArrayRef<unsigned_t> dilations) {
   PaddingTLBR pdim(pads);
   ShapeHW kdim(kernels);
   ShapeHW sdim(strides);
+  ShapeHW ddim(dilations);
+
+  // Dilation increases the "effective" filter size, so add it to the raw filter
+  // size when computing the output sizes. It is subtracted below because
+  // - (a + b) = - a - b.
   size_t outsx =
-      ((sx + pdim.top + pdim.bottom - kdim.height) / sdim.height + 1);
-  size_t outsy = ((sy + pdim.left + pdim.right - kdim.width) / sdim.width + 1);
+      ((sx + pdim.top + pdim.bottom - kdim.height - ddim.height) / sdim.height +
+       1);
+  size_t outsy =
+      ((sy + pdim.left + pdim.right - kdim.width - ddim.width) / sdim.width +
+       1);
   return {outsx, outsy};
 }
 

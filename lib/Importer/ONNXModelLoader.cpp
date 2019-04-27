@@ -559,8 +559,8 @@ llvm::Error ONNXModelLoader::loadConv(const ONNX_NAMESPACE::NodeProto &op,
   Pads pads;
   ASSIGN_VALUE_OR_RETURN_ERR(pads, getPads(dict, kernelShape, strides, idimHW));
 
-  auto outSz =
-      calculateConvPoolOutputDims(idim.h, idim.w, kernelShape, strides, pads);
+  auto outSz = calculateConvPoolOutputDims(idim.h, idim.w, kernelShape, strides,
+                                           pads, dilations);
   std::array<size_t, 4> outDims = {{idim.n, outSz.first, outSz.second, depth}};
   auto outTy = G_.getParent()->uniqueType(ElemKind::FloatTy, outDims);
 

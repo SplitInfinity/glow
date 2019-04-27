@@ -95,7 +95,8 @@ template <typename ElemTy>
 void BoundInterpreterFunction::fwdConvolutionInstFloatImpl(
     Value *inV, Value *outV, Value *filterV, Value *biasV,
     llvm::ArrayRef<unsigned_t> kernelSizes, llvm::ArrayRef<unsigned_t> strides,
-    llvm::ArrayRef<unsigned_t> pads, size_t group) {
+    llvm::ArrayRef<unsigned_t> pads, llvm::ArrayRef<unsigned_t> dilations,
+    size_t group) {
   staticAssertFloatingPointType(ElemTy);
 
   auto inW = getWeightHandle<ElemTy>(inV);
@@ -107,6 +108,7 @@ void BoundInterpreterFunction::fwdConvolutionInstFloatImpl(
   ShapeNHWC idim(inW.dims());
   ShapeHW kdim(kernelSizes);
   ShapeHW sdim(strides);
+  ShapeHW ddim(dilations);
 
   assert(idim.c % group == 0 && "Input channels must be divisible by group.");
   assert(odim.c % group == 0 && "Output channels must be divisible by group.");
@@ -134,8 +136,11 @@ void BoundInterpreterFunction::fwdConvolutionInstFloatImpl(
             float sum = 0;
             for (size_t fx = 0; fx < kdim.height; fx++) {
               for (size_t fy = 0; fy < kdim.width; fy++) {
-                ssize_t ox = x + fx;
-                ssize_t oy = y + fy;
+                // Filter values should be multiplied by every (dilation + 1)
+                // input element, so ox = x + (ddim.height + 1) * fx = x +
+                // ddim.height * fx + fx. The reasoning for oy is similar.
+                ssize_t ox = x + ddim.height * fx + fx;
+                ssize_t oy = y + ddim.width * fy + fy;
 
                 // Ignore index access below zero (this is due to padding).
                 if (ox < 0 || oy < 0 || ox >= ssize_t(idim.h) ||
@@ -165,7 +170,8 @@ template <typename ElemTy, typename AccumulatorTy>
 void BoundInterpreterFunction::fwdConvolutionInstQuantizedImpl(
     Value *inV, Value *outV, Value *filterV, Value *biasV,
     llvm::ArrayRef<unsigned_t> kernelSizes, llvm::ArrayRef<unsigned_t> strides,
-    llvm::ArrayRef<unsigned_t> pads, size_t group) {
+    llvm::ArrayRef<unsigned_t> pads, llvm::ArrayRef<unsigned_t> dilations,
+    size_t group) {
   auto inW = getWeightHandle<ElemTy>(inV);
   auto outW = getWeightHandle<ElemTy>(outV);
   auto filterW = getWeightHandle<ElemTy>(filterV);
@@ -175,6 +181,7 @@ void BoundInterpreterFunction::fwdConvolutionInstQuantizedImpl(
   ShapeNHWC idim(inW.dims());
   ShapeHW kdim(kernelSizes);
   ShapeHW sdim(strides);
+  ShapeHW ddim(dilations);
 
   assert(idim.c % group == 0 && "Input channels must be divisible by group.");
   assert(odim.c % group == 0 && "Output channels must be divisible by group.");
@@ -219,8 +226,11 @@ void BoundInterpreterFunction::fwdConvolutionInstQuantizedImpl(
             AccumulatorTy sum = 0;
             for (size_t fx = 0; fx < kdim.height; fx++) {
               for (size_t fy = 0; fy < kdim.width; fy++) {
-                ssize_t ox = x + fx;
-                ssize_t oy = y + fy;
+                // Filter values should be multiplied by every (dilation + 1)
+                // input element, so ox = x + (ddim.height + 1) * fx = x +
+                // ddim.height * fx + fx. The reasoning for oy is similar.
+                ssize_t ox = x + ddim.height * fx + fx;
+                ssize_t oy = y + ddim.width * fy + fy;
 
                 // Ignore index access below zero (this is due to padding).
                 if (ox < 0 || oy < 0 || ox >= ssize_t(idim.h) ||
@@ -260,20 +270,21 @@ void BoundInterpreterFunction::fwdConvolutionInst(const ConvolutionInst *I) {
   auto kernelSizes = I->getKernels();
   auto pads = I->getPads();
   auto strides = I->getStrides();
+  auto dilations = I->getDilations();
   size_t group = I->getGroup();
 
   if (I->getSrc()->getType()->isQuantizedType()) {
     dispatchQuantizedWithAccumulationImpl(
         fwdConvolutionInstQuantizedImpl, I->getSrc()->getElementType(),
         I->getSrc(), I->getDest(), I->getFilter(), I->getBias(), kernelSizes,
-        strides, pads, group);
+        strides, pads, dilations, group);
     return;
   }
 
   dispatchFloatingPointImpl(fwdConvolutionInstFloatImpl,
                             I->getSrc()->getElementType(), I->getSrc(),
                             I->getDest(), I->getFilter(), I->getBias(),
-                            kernelSizes, strides, pads, group);
+                            kernelSizes, strides, pads, dilations, group);
 }
 
 void BoundInterpreterFunction::fwdConvolutionGradInst(
@@ -296,6 +307,7 @@ void BoundInterpreterFunction::fwdConvolutionGradInst(
   ShapeNHWC idim(inW.dims());
   ShapeHW kdim(I->getKernels());
   ShapeHW sdim(I->getStrides());
+  ShapeHW ddim(I->getDilations());
   PaddingTLBR pdim(I->getPads());
 
   assert(idim.c % group == 0 && "Input channels must be divisible by group.");
@@ -323,8 +335,11 @@ void BoundInterpreterFunction::fwdConvolutionGradInst(
             // For each element in the convolution-filter:
             for (size_t fx = 0; fx < kdim.height; fx++) {
               for (size_t fy = 0; fy < kdim.width; fy++) {
-                ssize_t ox = x + fx;
-                ssize_t oy = y + fy;
+                // Filter values should be multiplied by every (dilation + 1)
+                // input element, so ox = x + (ddim.height + 1) * fx = x +
+                // ddim.height * fx + fx. The reasoning for oy is similar.
+                ssize_t ox = x + ddim.height * fx + fx;
+                ssize_t oy = y + ddim.width * fy + fy;
 
                 // Ignore index access below zero (this is due to padding).
                 if (ox < 0 || oy < 0 || ox >= ssize_t(idim.h) ||

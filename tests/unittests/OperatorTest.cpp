@@ -3439,6 +3439,114 @@ TEST_P(OperatorTest, Fp16Splat) {
   }
 }
 
+TEST_P(OperatorTest, DilatedConvolution) {
+  ENABLED_BACKENDS(Interpreter);
+
+  // Create a 5x5 input and fill it with consecutive numbers.
+  auto *input = mod_.createPlaceholder(ElemKind::FloatTy, {1, 5, 5, 1}, "input",
+                                       /*isTrainable=*/false);
+  auto IH = bindings_.allocate(input)->getHandle();
+  for (size_t i = 0; i < IH.size(); ++i) {
+    IH.raw(i) = i + 1;
+  }
+
+  // Create a 2x2 filter and set all values to 1 for simplicity.
+  auto filter = mod_.createPlaceholder(ElemKind::FloatTy, {1, 2, 2, 1},
+                                       "filter", /*isTrainable=*/false);
+  auto FH = bindings_.allocate(filter)->getHandle();
+  FH.clear(1);
+
+  // Create bias and set it to zero.
+  auto *zeroBias =
+      mod_.createPlaceholder(ElemKind::FloatTy, {1}, "bias", false);
+  bindings_.allocate(zeroBias)->zero();
+
+  // This test tests dilation = 1 and dilation = 2, so create output types for
+  // both of them.
+  auto dilOneOutTy = mod_.uniqueType(ElemKind::FloatTy, {1, 3, 3, 1});
+  auto dilTwoOutTy = mod_.uniqueType(ElemKind::FloatTy, {1, 2, 2, 1});
+
+  // Create graph for dilation = 1 and dilation = 2 test that use the same
+  // input, filter and bias.
+  ConvolutionNode *dilOneConv = F_->createConv(
+      "Conv1", input, filter, zeroBias, dilOneOutTy, /*kernel-*/ 2,
+      /*stride=*/1, /*pad=*/0, /*dilation=*/1, /*group=*/1);
+  ConvolutionNode *dilTwoConv = F_->createConv(
+      "Conv2", input, filter, zeroBias, dilTwoOutTy, /*kernel-*/ 2,
+      /*stride=*/1, /*pad=*/0, /*dilation=*/2, /*group=*/1);
+  SaveNode *dilOneSave = F_->createSave("save1", dilOneConv);
+  SaveNode *dilTwoSave = F_->createSave("save2", dilTwoConv);
+
+  bindings_.allocate(dilOneSave->getPlaceholder());
+  bindings_.allocate(dilTwoSave->getPlaceholder());
+
+  // Convert filter and bias to Constants.
+  ::glow::convertPlaceholdersToConstants(
+      F_, bindings_,
+      {input, dilOneSave->getPlaceholder(), dilTwoSave->getPlaceholder()});
+
+  // Compile and run the graph.
+  EE_.compile(CompilationMode::Infer, F_);
+  EE_.run(bindings_);
+
+  // Get handles to the results of the two tests.
+  auto dilOneRes = bindings_.get(dilOneSave->getPlaceholder())->getHandle();
+  auto dilTwoRes = bindings_.get(dilTwoSave->getPlaceholder())->getHandle();
+
+  // The input is 5x5 and looks like this:
+  //
+  // ---------------------
+  // | 1 | 2 | 3 | 4 | 5 |
+  // ---------------------
+  // | 6 | 7 | 8 | 9 | 10|
+  // ---------------------
+  // | 11| 12| 13| 14| 15|
+  // ---------------------
+  // | 16| 17| 18| 19| 20|
+  // ---------------------
+  // | 21| 22| 23| 24| 25|
+  // ---------------------
+
+  // For the dilation = 1 test, the filter looks like this:
+  //
+  // -------------
+  // | 1 | 0 | 1 |
+  // -------------
+  // | 0 | 0 | 0 |
+  // -------------
+  // | 1 | 0 | 1 |
+  // -------------
+  std::vector<size_t> dilOneExpectedDims = {1, 3, 3, 1};
+  ASSERT_TRUE(dilOneRes.dims().vec() == dilOneExpectedDims);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 0, 0, 0}), 1 + 3 + 11 + 13);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 0, 1, 0}), 2 + 4 + 12 + 14);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 0, 2, 0}), 3 + 5 + 13 + 15);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 1, 0, 0}), 6 + 8 + 16 + 18);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 1, 1, 0}), 7 + 9 + 17 + 19);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 1, 2, 0}), 8 + 10 + 18 + 20);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 2, 0, 0}), 11 + 13 + 21 + 23);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 2, 1, 0}), 12 + 14 + 22 + 24);
+  EXPECT_FLOAT_EQ(dilOneRes.at({0, 2, 2, 0}), 13 + 15 + 23 + 25);
+
+  // For the dilation = 2 test, the filter looks like this:
+  //
+  // -----------------
+  // | 1 | 0 | 0 | 1 |
+  // -----------------
+  // | 0 | 0 | 0 | 0 |
+  // -----------------
+  // | 0 | 0 | 0 | 0 |
+  // -----------------
+  // | 1 | 0 | 0 | 1 |
+  // -----------------
+  std::vector<size_t> dilTwoExpectedDims = {1, 2, 2, 1};
+  ASSERT_TRUE(dilTwoRes.dims().vec() == dilTwoExpectedDims);
+  EXPECT_FLOAT_EQ(dilTwoRes.at({0, 0, 0, 0}), 1 + 4 + 16 + 19);
+  EXPECT_FLOAT_EQ(dilTwoRes.at({0, 0, 1, 0}), 2 + 5 + 17 + 20);
+  EXPECT_FLOAT_EQ(dilTwoRes.at({0, 1, 0, 0}), 6 + 9 + 21 + 24);
+  EXPECT_FLOAT_EQ(dilTwoRes.at({0, 1, 1, 0}), 7 + 10 + 22 + 25);
+}
+
 TEST_P(OperatorTest, GroupConvolution) {
   auto *input =
       mod_.createPlaceholder(ElemKind::FloatTy, {1, 2, 1, 8}, "input", false);

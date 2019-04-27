@@ -292,8 +292,8 @@ llvm::Error Caffe2ModelLoader::loadOperator(const caffe2::OperatorDef &op) {
 
     // Calculate the size and allocate the output buffer.
     ShapeNHWC idim = ShapeNHWC(finalInType->dims());
-    auto outSz =
-        calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides, pads);
+    auto outSz = calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides,
+                                             pads, dilations);
     std::array<size_t, 4> outDims = {
         {idim.n, outSz.first, outSz.second, depth}};
 
@@ -465,8 +465,8 @@ llvm::Error Caffe2ModelLoader::loadOperator(const caffe2::OperatorDef &op) {
 
       TypeRef finalInType = finalIn.getType();
       ShapeNHWC idim = ShapeNHWC(finalInType->dims());
-      auto outSz =
-          calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides, pads);
+      auto outSz = calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides,
+                                               pads, /*dilations=*/{0, 0});
       std::array<size_t, 4> outDims = {
           {idim.n, outSz.first, outSz.second, idim.c}};
       if (typeName == "Int8MaxPool") {

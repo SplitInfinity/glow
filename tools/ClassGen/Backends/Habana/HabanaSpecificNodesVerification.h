@@ -51,8 +51,8 @@ static bool verifyConvolution(NodeValue src, NodeValue dest, NodeValue filter,
   isValid &= expectCompareTrue("channels number must be divisible by groups",
                                idim.c % group, size_t(0), parent);
 
-  auto outSz =
-      calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides, pads);
+  auto outSz = calculateConvPoolOutputDims(idim.h, idim.w, kernels, strides,
+                                           pads, /*dilations=*/{0, 0});
   isValid &=
       expectCompareTrue("Invalid output dimension N", odim.n, idim.n, parent);
   isValid &= expectCompareTrue("Invalid output dimension H", odim.h,

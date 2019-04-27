@@ -135,6 +135,7 @@ private:
                                        llvm::ArrayRef<unsigned_t> kernelSizes,
                                        llvm::ArrayRef<unsigned_t> strides,
                                        llvm::ArrayRef<unsigned_t> pads,
+                                       llvm::ArrayRef<unsigned_t> dilations,
                                        size_t group);
 
   template <typename ElemTy = float>
@@ -143,6 +144,7 @@ private:
                                    llvm::ArrayRef<unsigned_t> kernelSizes,
                                    llvm::ArrayRef<unsigned_t> strides,
                                    llvm::ArrayRef<unsigned_t> pads,
+                                   llvm::ArrayRef<unsigned_t> dilations,
                                    size_t group);
 
   template <typename ElemTy, typename AccumulatorTy>

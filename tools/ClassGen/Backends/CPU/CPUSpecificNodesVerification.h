@@ -24,8 +24,9 @@ bool CPUMaxSplatNode::verify() const {
 bool CPUConvDKKC8Node::verify() const {
   ShapeNHWC idim(getInput().getType()->dims());
   ShapeNHWC odim(getResult().getType()->dims());
-  auto outSz = calculateConvPoolOutputDims(idim.h, idim.w, getKernels(),
-                                           getStrides(), getPads());
+  auto outSz =
+      calculateConvPoolOutputDims(idim.h, idim.w, getKernels(), getStrides(),
+                                  getPads(), /*dilations=*/{0, 0});
   ShapeNHWC exp(idim.n, outSz.first, outSz.second, getBias().dims()[0]);
   return expectCompareTrue("Invalid output dimensions", exp, odim, this);
 }

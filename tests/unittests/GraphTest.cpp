@@ -450,7 +450,8 @@ TEST(Graph, simpleQuant) {
       MD.createPlaceholder(ElemKind::Int32QTy, {depth}, 1.3, 5, "B", true);
 
   // Calculate the size and allocate the output buffer.
-  auto outSz = calculateConvPoolOutputDims(width, width, kernels, steps, pads);
+  auto outSz = calculateConvPoolOutputDims(width, width, kernels, steps, pads,
+                                           dilations);
   std::array<size_t, 4> outDims = {{1, outSz.first, outSz.second, 16}};
   auto t = F->getParent()->uniqueType(glow::ElemKind::Int8QTy, outDims, 1.5, 6);
 
